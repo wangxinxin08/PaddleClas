@@ -29,7 +29,7 @@ import math
 from ppcls.arch.backbone.base.theseus_layer import TheseusLayer
 from ppcls.utils.save_load import load_dygraph_pretrain, load_dygraph_pretrain_from_url
 
-__all__ = ['CSPFusionNet']
+__all__ = ['CSPFusionNet', 'CSPFusionNetV1']
 
 
 class ConvBNLayer(TheseusLayer):
