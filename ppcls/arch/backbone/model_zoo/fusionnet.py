@@ -285,18 +285,20 @@ if __name__ == '__main__':
     import sys
     sys.path.append('/paddle/2d/PaddleClas')
     net = CSPFusionNet(
-        [1, 2, 8, 8, 4],
+        [1, 3, 12, 12, 6],
         channels=[32, 64, 128, 256, 512, 1024],
         depth_wise=False)
     p = 0
     for k, v in net.state_dict().items():
         p += np.prod(v.shape)
 
-    print('CSPFusionNet parameters: ', p)
-    x = paddle.randn((2, 3, 256, 256))
-    from paddle import jit
-    from paddle.static import InputSpec
-    net = jit.to_static(
-        net, input_spec=[InputSpec(
-            shape=[None, 3, 256, 256], name='x')])
-    jit.save(net, '/paddle/2d/PaddleClas/inference/cspfusionnet')
+    print(p)
+
+    # print('CSPFusionNet parameters: ', p)
+    # x = paddle.randn((2, 3, 256, 256))
+    # from paddle import jit
+    # from paddle.static import InputSpec
+    # net = jit.to_static(
+    #     net, input_spec=[InputSpec(
+    #         shape=[None, 3, 256, 256], name='x')])
+    # jit.save(net, '/paddle/2d/PaddleClas/inference/cspfusionnet')
