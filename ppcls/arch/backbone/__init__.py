@@ -60,6 +60,8 @@ from ppcls.arch.backbone.model_zoo.hardnet import HarDNet68, HarDNet85, HarDNet3
 from ppcls.arch.backbone.variant_models.resnet_variant import ResNet50_last_stage_stride1
 from ppcls.arch.backbone.model_zoo.fusionnet import CSPFusionNet
 from ppcls.arch.backbone.model_zoo.csprepvgg import CSPRepVGGNet
+from ppcls.arch.backbone.model_zoo.cspresnet import CSPResNetW, CSPResNetB
+from ppcls.arch.backbone.model_zoo.csprepvgg import CSPRepVGGNet
 
 
 def get_apis():
