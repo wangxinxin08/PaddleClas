@@ -25,12 +25,12 @@ from paddle.nn import AdaptiveAvgPool2D, MaxPool2D, AvgPool2D
 from paddle.nn.initializer import Uniform
 import math
 
-import sys
-sys.path.append('/paddle/2d/PaddleClas')
+# import sys
+# sys.path.append('/paddle/2d/PaddleClas')
 from ppcls.arch.backbone.base.theseus_layer import TheseusLayer
 from ppcls.utils.save_load import load_dygraph_pretrain, load_dygraph_pretrain_from_url
 
-__all__ = ['CSPRepVGG']
+__all__ = ['CSPRepVGGNet']
 
 
 class ConvBNLayer(TheseusLayer):
@@ -248,25 +248,11 @@ class CSPRepVGGNet(TheseusLayer):
         return x
 
 
-def CSPRepVGGNet(pretrained=False, use_ssld=False, **kwargs):
-    """
-    CSPResNet
-    Args:
-        pretrained: bool=False or str. If `True` load pretrained parameters, `False` otherwise.
-                    If str, means the path of the pretrained model.
-        use_ssld: bool=False. Whether using distillation pretrained model when pretrained=True.
-    Returns:
-        model: nn.Layer. Specific `ResNet101_vd` model depends on args.
-    """
-    model = CSPRepVGGNet(**kwargs)
-    return model
-
-
 if __name__ == '__main__':
     width_multiple = 1
     depth_multiple = 1
     net = CSPRepVGGNet(
-        [int(n * depth_multiple) for n in [3, 9, 12, 15]],
+        [int(n * depth_multiple) for n in [4, 8, 12, 16]],
         channels=[int(c * width_multiple) for c in [64, 128, 256, 512, 1024]],
         depth_wise=False)
     p = 0

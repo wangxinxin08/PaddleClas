@@ -27,8 +27,8 @@ from paddle.nn import AdaptiveAvgPool2D, MaxPool2D, AvgPool2D
 from paddle.nn.initializer import Uniform
 import math
 
-import sys
-sys.path.append('/paddle/2d/PaddleClas')
+# import sys
+# sys.path.append('/paddle/2d/PaddleClas')
 from ppcls.arch.backbone.base.theseus_layer import TheseusLayer
 from ppcls.utils.save_load import load_dygraph_pretrain, load_dygraph_pretrain_from_url
 
@@ -372,7 +372,7 @@ if __name__ == '__main__':
     depth_multiple = 1
     net = CSPResNet(
         WideBlock,
-        [int(n * depth_multiple) for n in [2, 4, 6, 8]],
+        [int(n * depth_multiple) for n in [2, 4, 8, 12]],
         channels=[int(c * width_multiple) for c in [64, 128, 256, 512, 1024]],
         depth_wise=False)
     p = 0
@@ -382,10 +382,10 @@ if __name__ == '__main__':
 
     print('CSPResNet parameters: ', p)
 
-    x = paddle.randn((2, 3, 256, 256))
-    from paddle import jit
-    from paddle.static import InputSpec
-    net = jit.to_static(
-        net, input_spec=[InputSpec(
-            shape=[None, 3, 256, 256], name='x')])
-    jit.save(net, '/paddle/2d/PaddleClas/inference/cspresnet')
+    # x = paddle.randn((2, 3, 256, 256))
+    # from paddle import jit
+    # from paddle.static import InputSpec
+    # net = jit.to_static(
+    #     net, input_spec=[InputSpec(
+    #         shape=[None, 3, 256, 256], name='x')])
+    # jit.save(net, '/paddle/2d/PaddleClas/inference/cspresnet')

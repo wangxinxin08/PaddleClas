@@ -19,7 +19,7 @@ Global:
 # model architecture
 Arch:
   name: CSPResNetW
-  layers: [2, 4, 6, 8]
+  layers: [2, 4, 8, 12]
   class_num: 1000
  
 # loss function config for traing/eval process
