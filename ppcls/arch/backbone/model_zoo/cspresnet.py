@@ -74,26 +74,24 @@ class ConvBNLayer(TheseusLayer):
 
 
 class RepVggBlock(TheseusLayer):
-    def __init__(self,
-                 ch_in,
-                 ch_out,
-                 act='relu'):
+    def __init__(self, ch_in, ch_out, act='relu'):
         super(RepVggBlock, self).__init__()
-        self.conv1 = ConvBNLayer(ch_in, ch_out, 3, stride=1, padding=1, act=None)
-        self.conv2 = ConvBNLayer(ch_in, ch_out, 1, stride=1, padding=0, act=None)
+        self.conv1 = ConvBNLayer(
+            ch_in, ch_out, 3, stride=1, padding=1, act=None)
+        self.conv2 = ConvBNLayer(
+            ch_in, ch_out, 1, stride=1, padding=0, act=None)
         self.act = act
-
 
     def forward(self, x):
         y = self.conv1(x) + self.conv2(x)
-        if self.act == 'leaky':
+        if self.act == 'leaky_relu':
             y = F.leaky_relu(y, 0.1)
         elif self.act == 'mish':
             y = mish(y)
         else:
             y = getattr(F, self.act)(y)
         return y
-    
+
     # def eval(self):
     #     if not hasattr(self, 'conv'):
     #         self.conv = nn.Conv2D(
@@ -139,26 +137,24 @@ class RepVggBlock(TheseusLayer):
 
 
 class WideRepVggBlock(TheseusLayer):
-    def __init__(self,
-                 ch_in,
-                 ch_out,
-                 act='relu'):
+    def __init__(self, ch_in, ch_out, act='relu'):
         super(WideRepVggBlock, self).__init__()
-        self.conv1 = ConvBNLayer(ch_in, ch_out, 3, stride=1, padding=1, act=None)
-        self.conv2 = ConvBNLayer(ch_in, ch_out, 3, stride=1, padding=1, act=None)
+        self.conv1 = ConvBNLayer(
+            ch_in, ch_out, 3, stride=1, padding=1, act=None)
+        self.conv2 = ConvBNLayer(
+            ch_in, ch_out, 3, stride=1, padding=1, act=None)
         self.act = act
-
 
     def forward(self, x):
         y = self.conv1(x) + self.conv2(x)
-        if self.act == 'leaky':
+        if self.act == 'leaky_relu':
             y = F.leaky_relu(y, 0.1)
         elif self.act == 'mish':
             y = mish(y)
         else:
             y = getattr(F, self.act)(y)
         return y
-    
+
     # def eval(self):
     #     if not hasattr(self, 'conv'):
     #         self.conv = nn.Conv2D(
@@ -203,11 +199,7 @@ class WideRepVggBlock(TheseusLayer):
 
 
 class WideBlock(TheseusLayer):
-    def __init__(self,
-                 ch_in,
-                 ch_out,
-                 act='relu',
-                 shortcut=True):
+    def __init__(self, ch_in, ch_out, act='relu', shortcut=True):
         super(WideBlock, self).__init__()
         assert ch_in == ch_out
         self.conv1 = WideRepVggBlock(ch_out, ch_out, act=act)
@@ -224,14 +216,11 @@ class WideBlock(TheseusLayer):
 
 
 class BasicBlock(TheseusLayer):
-    def __init__(self,
-                 ch_in,
-                 ch_out,
-                 act='relu',
-                 shortcut=True):
+    def __init__(self, ch_in, ch_out, act='relu', shortcut=True):
         super(BasicBlock, self).__init__()
         assert ch_in == ch_out
-        self.conv1 = ConvBNLayer(ch_in, ch_out, 3, stride=1, padding=1, act=act)
+        self.conv1 = ConvBNLayer(
+            ch_in, ch_out, 3, stride=1, padding=1, act=act)
         self.conv2 = RepVggBlock(ch_out, ch_out, act=act)
         self.shortcut = shortcut
 
@@ -261,7 +250,14 @@ class EffectiveSELayer(TheseusLayer):
 
 
 class CSPResStage(TheseusLayer):
-    def __init__(self, block_fn, ch_in, ch_out, n, stride, act='relu', attn='eca'):
+    def __init__(self,
+                 block_fn,
+                 ch_in,
+                 ch_out,
+                 n,
+                 stride,
+                 act='relu',
+                 attn='eca'):
         super(CSPResStage, self).__init__()
 
         ch_mid = ch_in // 2
@@ -269,8 +265,7 @@ class CSPResStage(TheseusLayer):
         self.conv2 = ConvBNLayer(ch_in, ch_mid, 1, act=act)
         self.blocks = nn.Sequential(* [
             block_fn(
-                ch_mid, ch_mid, act=act, shortcut=True)
-            for i in range(n)
+                ch_mid, ch_mid, act=act, shortcut=True) for i in range(n)
         ])
         if attn:
             self.attn = EffectiveSELayer(ch_mid * 2, act='sigmoid')
@@ -279,7 +274,8 @@ class CSPResStage(TheseusLayer):
 
         self.conv3 = ConvBNLayer(ch_mid * 2, ch_mid * 2, 1, act=act)
         if stride == 2:
-            self.conv_down = ConvBNLayer(ch_mid * 2, ch_out, 3, stride=2, padding=1, act=act)
+            self.conv_down = ConvBNLayer(
+                ch_mid * 2, ch_out, 3, stride=2, padding=1, act=act)
         else:
             self.conv_down = None
 
@@ -311,12 +307,8 @@ class CSPResNet(TheseusLayer):
         n = len(channels) - 1
         self.stages = nn.Sequential(* [
             CSPResStage(
-                block_fn,
-                channels[i],
-                channels[i + 1],
-                layers[i],
-                2,
-                act=act) for i in range(n)
+                block_fn, channels[i], channels[i + 1], layers[i], 2, act=act)
+            for i in range(n)
         ])
 
         self.avg_pool = nn.AdaptiveAvgPool2D(1)
@@ -371,8 +363,7 @@ if __name__ == '__main__':
     width_multiple = 1
     depth_multiple = 1
     net = CSPResNet(
-        WideBlock,
-        [int(n * depth_multiple) for n in [2, 4, 8, 12]],
+        WideBlock, [int(n * depth_multiple) for n in [2, 4, 8, 12]],
         channels=[int(c * width_multiple) for c in [64, 128, 256, 512, 1024]],
         depth_wise=False)
     p = 0

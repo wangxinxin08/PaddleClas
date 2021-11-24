@@ -68,6 +68,7 @@ class ConvBNLayer(TheseusLayer):
 
         return x
 
+
 class RepVggBlock(TheseusLayer):
     def __init__(self,
                  ch_in,
@@ -81,15 +82,14 @@ class RepVggBlock(TheseusLayer):
         self.bn = nn.BatchNorm2D(ch_in)
         self.act = act
 
-
     def forward(self, x):
         y = self.bn(x) + self.conv1(x) + self.conv2(x)
-        if self.act == 'leaky':
+        if self.act == 'leaky_relu':
             y = F.leaky_relu(y, 0.1)
         else:
             y = getattr(F, self.act)(y)
         return y
-    
+
     # def eval(self):
     #     if not hasattr(self, 'conv'):
     #         self.conv = nn.Conv2D(
@@ -168,7 +168,14 @@ class EffectiveSELayer(TheseusLayer):
 
 
 class CSPRepVGGStage(TheseusLayer):
-    def __init__(self, ch_in, ch_out, n, stride, act='relu', attn='eca', depth_wise=False):
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 n,
+                 stride,
+                 act='relu',
+                 attn='eca',
+                 depth_wise=False):
         super(CSPRepVGGStage, self).__init__()
 
         ch_mid = ch_in // 2
@@ -186,7 +193,8 @@ class CSPRepVGGStage(TheseusLayer):
 
         self.conv3 = ConvBNLayer(ch_mid * 2, ch_mid * 2, 1, act=act)
         if stride == 2:
-            self.conv_down = ConvBNLayer(ch_mid * 2, ch_out, 3, stride=2, act=act)
+            self.conv_down = ConvBNLayer(
+                ch_mid * 2, ch_out, 3, stride=2, act=act)
         else:
             self.conv_down = None
 
@@ -214,8 +222,7 @@ class CSPRepVGGNet(TheseusLayer):
         self.class_num = class_num
         self.stem = nn.Sequential(
             ConvBNLayer(
-                3, channels[0], 3, stride=2, padding=1, act=act),
-        )
+                3, channels[0], 3, stride=2, padding=1, act=act), )
 
         n = len(channels) - 1
         self.stages = nn.Sequential(* [
