@@ -27,12 +27,12 @@ from paddle.nn import AdaptiveAvgPool2D, MaxPool2D, AvgPool2D
 from paddle.nn.initializer import Uniform
 import math
 
-# import sys
-# sys.path.append('/paddle/2d/PaddleClas')
+import sys
+sys.path.append('/paddle/2d/PaddleClas')
 from ppcls.arch.backbone.base.theseus_layer import TheseusLayer
 from ppcls.utils.save_load import load_dygraph_pretrain, load_dygraph_pretrain_from_url
 
-__all__ = ['CSPResNetB', 'CSPResNetW']
+__all__ = ['CSPResNetB']
 
 
 class ConvBNLayer(TheseusLayer):
@@ -63,9 +63,11 @@ class ConvBNLayer(TheseusLayer):
         x = self.bn(x)
         if self.act is not None:
             if self.act == 'leaky_relu':
-                x = F.leaky_relu(x, 0.1)
+                x = F.leaky_relu(x, 0.01)
             elif self.act == 'mish':
                 x = mish(x)
+            elif self.act == 'silu':
+                x = x * F.sigmoid(x)
             else:
                 x = getattr(F, self.act)(x)
 
@@ -84,134 +86,14 @@ class RepVggBlock(TheseusLayer):
     def forward(self, x):
         y = self.conv1(x) + self.conv2(x)
         if self.act == 'leaky_relu':
-            y = F.leaky_relu(y, 0.1)
+            y = F.leaky_relu(y, 0.01)
         elif self.act == 'mish':
             y = mish(y)
+        elif self.act == 'silu':
+            y = y * F.sigmoid(y)
         else:
             y = getattr(F, self.act)(y)
         return y
-
-    # def eval(self):
-    #     if not hasattr(self, 'conv'):
-    #         self.conv = nn.Conv2D(
-    #             in_channels=self.in_channels,
-    #             out_channels=self.out_channels,
-    #             kernel_size=self.kernel_size,
-    #             stride=self.stride,
-    #             padding=self.padding,
-    #             dilation=self.dilation,
-    #             groups=self.groups,
-    #             padding_mode=self.padding_mode)
-    #     self.training = False
-    #     kernel, bias = self.get_equivalent_kernel_bias()
-    #     self.conv.weight.set_value(kernel)
-    #     self.conv.bias.set_value(bias)
-    #     for layer in self.sublayers():
-    #         layer.eval()
-
-    # def get_equivalent_kernel_bias(self):
-    #     kernel3x3, bias3x3 = self._fuse_bn_tensor(self.conv1)
-    #     kernel1x1, bias1x1 = self._fuse_bn_tensor(self.conv2)
-    #     return kernel3x3 + self._pad_1x1_to_3x3_tensor(
-    #         kernel1x1), bias3x3 + bias1x1
-
-    # def _pad_1x1_to_3x3_tensor(self, kernel1x1):
-    #     if kernel1x1 is None:
-    #         return 0
-    #     else:
-    #         return nn.functional.pad(kernel1x1, [1, 1, 1, 1])
-
-    # def _fuse_bn_tensor(self, branch):
-    #     if branch is None:
-    #         return 0, 0
-    #     kernel = branch.conv.weight
-    #     running_mean = branch.bn._mean
-    #     running_var = branch.bn._variance
-    #     gamma = branch.bn.weight
-    #     beta = branch.bn.bias
-    #     eps = branch.bn._epsilon
-    #     std = (running_var + eps).sqrt()
-    #     t = (gamma / std).reshape((-1, 1, 1, 1))
-    #     return kernel * t, beta - running_mean * gamma / std
-
-
-class WideRepVggBlock(TheseusLayer):
-    def __init__(self, ch_in, ch_out, act='relu'):
-        super(WideRepVggBlock, self).__init__()
-        self.conv1 = ConvBNLayer(
-            ch_in, ch_out, 3, stride=1, padding=1, act=None)
-        self.conv2 = ConvBNLayer(
-            ch_in, ch_out, 3, stride=1, padding=1, act=None)
-        self.act = act
-
-    def forward(self, x):
-        y = self.conv1(x) + self.conv2(x)
-        if self.act == 'leaky_relu':
-            y = F.leaky_relu(y, 0.1)
-        elif self.act == 'mish':
-            y = mish(y)
-        else:
-            y = getattr(F, self.act)(y)
-        return y
-
-    # def eval(self):
-    #     if not hasattr(self, 'conv'):
-    #         self.conv = nn.Conv2D(
-    #             in_channels=self.in_channels,
-    #             out_channels=self.out_channels,
-    #             kernel_size=self.kernel_size,
-    #             stride=self.stride,
-    #             padding=self.padding,
-    #             dilation=self.dilation,
-    #             groups=self.groups,
-    #             padding_mode=self.padding_mode)
-    #     self.training = False
-    #     kernel, bias = self.get_equivalent_kernel_bias()
-    #     self.conv.weight.set_value(kernel)
-    #     self.conv.bias.set_value(bias)
-    #     for layer in self.sublayers():
-    #         layer.eval()
-
-    # def get_equivalent_kernel_bias(self):
-    #     kernel3x3, bias3x3 = self._fuse_bn_tensor(self.conv1)
-    #     kernel1x1, bias1x1 = self._fuse_bn_tensor(self.conv2)
-    #     return kernel3x3 + kernel1x1, bias3x3 + bias1x1
-
-    # def _pad_1x1_to_3x3_tensor(self, kernel1x1):
-    #     if kernel1x1 is None:
-    #         return 0
-    #     else:
-    #         return nn.functional.pad(kernel1x1, [1, 1, 1, 1])
-
-    # def _fuse_bn_tensor(self, branch):
-    #     if branch is None:
-    #         return 0, 0
-    #     kernel = branch.conv.weight
-    #     running_mean = branch.bn._mean
-    #     running_var = branch.bn._variance
-    #     gamma = branch.bn.weight
-    #     beta = branch.bn.bias
-    #     eps = branch.bn._epsilon
-    #     std = (running_var + eps).sqrt()
-    #     t = (gamma / std).reshape((-1, 1, 1, 1))
-    #     return kernel * t, beta - running_mean * gamma / std
-
-
-class WideBlock(TheseusLayer):
-    def __init__(self, ch_in, ch_out, act='relu', shortcut=True):
-        super(WideBlock, self).__init__()
-        assert ch_in == ch_out
-        self.conv1 = WideRepVggBlock(ch_out, ch_out, act=act)
-        self.conv2 = RepVggBlock(ch_out, ch_out, act=act)
-        self.shortcut = shortcut
-
-    def forward(self, x):
-        y = self.conv1(x)
-        y = self.conv2(y)
-        if self.shortcut:
-            return paddle.add(x, y)
-        else:
-            return y
 
 
 class BasicBlock(TheseusLayer):
@@ -237,7 +119,7 @@ class EffectiveSELayer(TheseusLayer):
     From `CenterMask : Real-Time Anchor-Free Instance Segmentation` - https://arxiv.org/abs/1911.06667
     """
 
-    def __init__(self, channels, act='sigmoid'):
+    def __init__(self, channels, act='hardsigmoid'):
         super(EffectiveSELayer, self).__init__()
         self.fc = nn.Conv2D(channels, channels, kernel_size=1, padding=0)
         self.act = act
@@ -269,11 +151,11 @@ class CSPResStage(TheseusLayer):
         self.conv2 = ConvBNLayer(ch_mid, ch_mid // 2, 1, act=act)
         self.blocks = nn.Sequential(* [
             block_fn(
-                ch_mid // 2, ch_mid // 2, act=act, shortcut=True)
+                ch_mid // 2, ch_mid // 2, act='leaky_relu', shortcut=True)
             for i in range(n)
         ])
         if attn:
-            self.attn = EffectiveSELayer(ch_mid, act='sigmoid')
+            self.attn = EffectiveSELayer(ch_mid, act='hardsigmoid')
         else:
             self.attn = None
 
@@ -336,20 +218,6 @@ class CSPResNet(TheseusLayer):
         return x
 
 
-def CSPResNetW(pretrained=False, use_ssld=False, **kwargs):
-    """
-    CSPResNet
-    Args:
-        pretrained: bool=False or str. If `True` load pretrained parameters, `False` otherwise.
-                    If str, means the path of the pretrained model.
-        use_ssld: bool=False. Whether using distillation pretrained model when pretrained=True.
-    Returns:
-        model: nn.Layer. Specific `ResNet101_vd` model depends on args.
-    """
-    model = CSPResNet(block_fn=WideBlock, **kwargs)
-    return model
-
-
 def CSPResNetB(pretrained=False, use_ssld=False, **kwargs):
     """
     CSPResNet
@@ -371,17 +239,18 @@ if __name__ == '__main__':
         BasicBlock, [int(n * depth_multiple) for n in [3, 6, 6, 3]],
         channels=[int(c * width_multiple) for c in [64, 128, 256, 512, 1024]],
         depth_wise=False)
-    p = 0
-    for k, v in net.state_dict().items():
-        print(k, v.shape)
-        p += np.prod(v.shape)
+    paddle.save(net.state_dict(), 'cspresnetb50_silu.pdparams')
+    # p = 0
+    # for k, v in net.state_dict().items():
+    #     print(k, v.shape)
+    #     p += np.prod(v.shape)
 
-    print('CSPResNet parameters: ', p)
+    # print('CSPResNet parameters: ', p)
 
-    x = paddle.randn((2, 3, 256, 256))
-    from paddle import jit
-    from paddle.static import InputSpec
-    net = jit.to_static(
-        net, input_spec=[InputSpec(
-            shape=[None, 3, 256, 256], name='x')])
-    jit.save(net, '/paddle/2d/PaddleClas/inference/cspresnet')
+    # x = paddle.randn((2, 3, 256, 256))
+    # from paddle import jit
+    # from paddle.static import InputSpec
+    # net = jit.to_static(
+    #     net, input_spec=[InputSpec(
+    #         shape=[None, 3, 256, 256], name='x')])
+    # jit.save(net, '/paddle/2d/PaddleClas/inference/cspresnet')

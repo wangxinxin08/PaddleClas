@@ -20,6 +20,8 @@ Global:
 Arch:
   name: CSPRepVGGNet
   layers: [4, 8, 12, 16]
+  channels: [80, 160, 320, 640, 1280]
+  act: leaky_relu
   class_num: 1000
  
 # loss function config for traing/eval process

@@ -25,8 +25,8 @@ from paddle.nn import AdaptiveAvgPool2D, MaxPool2D, AvgPool2D
 from paddle.nn.initializer import Uniform
 import math
 
-# import sys
-# sys.path.append('/paddle/2d/PaddleClas')
+import sys
+sys.path.append('/paddle/2d/PaddleClas')
 from ppcls.arch.backbone.base.theseus_layer import TheseusLayer
 from ppcls.utils.save_load import load_dygraph_pretrain, load_dygraph_pretrain_from_url
 
@@ -194,7 +194,7 @@ class CSPRepVGGStage(TheseusLayer):
         self.conv3 = ConvBNLayer(ch_mid * 2, ch_mid * 2, 1, act=act)
         if stride == 2:
             self.conv_down = ConvBNLayer(
-                ch_mid * 2, ch_out, 3, stride=2, act=act)
+                ch_mid * 2, ch_out, 3, stride=2, padding=1, act=act)
         else:
             self.conv_down = None
 
@@ -220,9 +220,8 @@ class CSPRepVGGNet(TheseusLayer):
         super(CSPRepVGGNet, self).__init__()
 
         self.class_num = class_num
-        self.stem = nn.Sequential(
-            ConvBNLayer(
-                3, channels[0], 3, stride=2, padding=1, act=act), )
+        self.stem = ConvBNLayer(
+            3, channels[0], 3, stride=2, padding=1, act=act)
 
         n = len(channels) - 1
         self.stages = nn.Sequential(* [
@@ -256,11 +255,11 @@ class CSPRepVGGNet(TheseusLayer):
 
 
 if __name__ == '__main__':
-    width_multiple = 1
-    depth_multiple = 1
+    depth_multiple = 1.
+    width_multiple = 1.
     net = CSPRepVGGNet(
-        [int(n * depth_multiple) for n in [4, 8, 12, 16]],
-        channels=[int(c * width_multiple) for c in [64, 128, 256, 512, 1024]],
+        [int(n * depth_multiple) for n in [3, 12, 18, 9]],
+        channels=[int(c * width_multiple) for c in [80, 160, 320, 640, 1280]],
         depth_wise=False)
     p = 0
     for k, v in net.state_dict().items():
