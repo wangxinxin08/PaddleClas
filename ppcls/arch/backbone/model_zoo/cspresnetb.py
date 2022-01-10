@@ -77,6 +77,8 @@ class ConvBNLayer(TheseusLayer):
 class RepVggBlock(TheseusLayer):
     def __init__(self, ch_in, ch_out, act='relu'):
         super(RepVggBlock, self).__init__()
+        self.ch_in = ch_in
+        self.ch_out = ch_out
         self.conv1 = ConvBNLayer(
             ch_in, ch_out, 3, stride=1, padding=1, act=None)
         self.conv2 = ConvBNLayer(
@@ -84,6 +86,10 @@ class RepVggBlock(TheseusLayer):
         self.act = act
 
     def forward(self, x):
+        # if not self.training:
+        #     y = self.conv(x)
+        # else:
+        #     y = self.conv1(x) + self.conv2(x)
         y = self.conv1(x) + self.conv2(x)
         if self.act == 'leaky_relu':
             y = F.leaky_relu(y, 0.01)
@@ -94,6 +100,47 @@ class RepVggBlock(TheseusLayer):
         else:
             y = getattr(F, self.act)(y)
         return y
+
+    # def eval(self):
+    #     if not hasattr(self, 'conv'):
+    #         self.conv = nn.Conv2D(
+    #             in_channels=self.ch_in,
+    #             out_channels=self.ch_out,
+    #             kernel_size=3,
+    #             stride=1,
+    #             padding=1,
+    #             groups=1)
+    #     self.training = False
+    #     kernel, bias = self.get_equivalent_kernel_bias()
+    #     self.conv.weight.set_value(kernel)
+    #     self.conv.bias.set_value(bias)
+    #     for layer in self.sublayers():
+    #         layer.eval()
+
+    # def get_equivalent_kernel_bias(self):
+    #     kernel3x3, bias3x3 = self._fuse_bn_tensor(self.conv1)
+    #     kernel1x1, bias1x1 = self._fuse_bn_tensor(self.conv2)
+    #     return kernel3x3 + self._pad_1x1_to_3x3_tensor(
+    #         kernel1x1), bias3x3 + bias1x1
+
+    # def _pad_1x1_to_3x3_tensor(self, kernel1x1):
+    #     if kernel1x1 is None:
+    #         return 0
+    #     else:
+    #         return nn.functional.pad(kernel1x1, [1, 1, 1, 1])
+
+    # def _fuse_bn_tensor(self, branch):
+    #     if branch is None:
+    #         return 0, 0
+    #     kernel = branch.conv.weight
+    #     running_mean = branch.bn._mean
+    #     running_var = branch.bn._variance
+    #     gamma = branch.bn.weight
+    #     beta = branch.bn.bias
+    #     eps = branch.bn._epsilon
+    #     std = (running_var + eps).sqrt()
+    #     t = (gamma / std).reshape((-1, 1, 1, 1))
+    #     return kernel * t, beta - running_mean * gamma / std
 
 
 class BasicBlock(TheseusLayer):
@@ -217,6 +264,12 @@ class CSPResNet(TheseusLayer):
 
         return x
 
+    def eval(self):
+        self.training = False
+        for layer in self.sublayers():
+            layer.training = False
+            layer.eval()
+
 
 def CSPResNetB(pretrained=False, use_ssld=False, **kwargs):
     """
@@ -239,18 +292,18 @@ if __name__ == '__main__':
         BasicBlock, [int(n * depth_multiple) for n in [3, 6, 6, 3]],
         channels=[int(c * width_multiple) for c in [64, 128, 256, 512, 1024]],
         depth_wise=False)
-    paddle.save(net.state_dict(), 'cspresnetb50_silu.pdparams')
+    # paddle.save(net.state_dict(), 'cspresnetb50_silu.pdparams')
     # p = 0
     # for k, v in net.state_dict().items():
     #     print(k, v.shape)
     #     p += np.prod(v.shape)
 
     # print('CSPResNet parameters: ', p)
-
-    # x = paddle.randn((2, 3, 256, 256))
-    # from paddle import jit
-    # from paddle.static import InputSpec
-    # net = jit.to_static(
-    #     net, input_spec=[InputSpec(
-    #         shape=[None, 3, 256, 256], name='x')])
-    # jit.save(net, '/paddle/2d/PaddleClas/inference/cspresnet')
+    net.eval()
+    x = paddle.randn((2, 3, 256, 256))
+    from paddle import jit
+    from paddle.static import InputSpec
+    net = jit.to_static(
+        net, input_spec=[InputSpec(
+            shape=[None, 3, 256, 256], name='x')])
+    jit.save(net, '/paddle/2d/PaddleClas/inference/cspresnetb')
