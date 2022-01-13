@@ -198,7 +198,7 @@ class CSPResStage(TheseusLayer):
         self.conv2 = ConvBNLayer(ch_mid, ch_mid // 2, 1, act=act)
         self.blocks = nn.Sequential(* [
             block_fn(
-                ch_mid // 2, ch_mid // 2, act='leaky_relu', shortcut=True)
+                ch_mid // 2, ch_mid // 2, act=act, shortcut=True)
             for i in range(n)
         ])
         if attn:
@@ -225,7 +225,7 @@ class CSPResNet(TheseusLayer):
                  block_fn,
                  layers=[3, 6, 6, 3],
                  channels=[64, 128, 256, 512, 1024],
-                 act='leaky_relu',
+                 act='swish',
                  class_num=1000,
                  depth_wise=False):
         super(CSPResNet, self).__init__()
